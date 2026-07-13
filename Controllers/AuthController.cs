@@ -1,5 +1,6 @@
 using ConcesionariaQuiros.Data;
 using ConcesionariaQuiros.Models;
+using ConcesionariaQuiros.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,14 @@ namespace ConcesionariaQuiros.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ConcesionariaContext _context;
+        private readonly JwtService _jwtService;
 
-        public AuthController(ConcesionariaContext context)
+        public AuthController(
+            ConcesionariaContext context,
+            JwtService jwtService)
         {
             _context = context;
+            _jwtService = jwtService;
         }
 
         [HttpPost("login")]
@@ -32,9 +37,13 @@ namespace ConcesionariaQuiros.Controllers
                 });
             }
 
+            // Generar el JWT
+            var token = _jwtService.GenerarToken(usuario);
+
             return Ok(new
             {
                 mensaje = "Inicio de sesión correcto.",
+                token = token,
                 usuario = new
                 {
                     usuario.UsuarioId,

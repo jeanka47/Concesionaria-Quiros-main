@@ -1,10 +1,14 @@
 ﻿using ConcesionariaQuiros.Data;
+using ConcesionariaQuiros.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace ConcesionariaQuiros
 {
     public class Program
-       {
+    {
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +18,37 @@ namespace ConcesionariaQuiros
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(
+                                builder.Configuration["Jwt:Key"]
+                                ?? throw new InvalidOperationException(
+                                    "La clave JWT no está configurada.")
+                            )
+                        )
+                    };
+                });
+
+            builder.Services.AddAuthorization();
+
+            builder.Services.AddScoped<JwtService>();
+
             builder.Services.AddDbContext<ConcesionariaContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddCors(options =>
             {
@@ -33,18 +66,22 @@ namespace ConcesionariaQuiros
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
+
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Concesionaria API V1");
-                    c.RoutePrefix = string.Empty; // 👈 Swagger abre en la raíz
+                    c.SwaggerEndpoint(
+                        "/swagger/v1/swagger.json",
+                        "Concesionaria API V1");
+
+                    c.RoutePrefix = string.Empty;
                 });
             }
 
-            // ⚠️ Desactivamos HTTPS redirection porque en Mac no hay certificado configurado
             // app.UseHttpsRedirection();
 
             app.UseCors("ReactPolicy");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
