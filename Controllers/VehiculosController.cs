@@ -3,11 +3,13 @@ using ConcesionariaQuiros.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ConcesionariaQuiros.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class VehiculosController : ControllerBase
     {
         private readonly ConcesionariaContext _context;
