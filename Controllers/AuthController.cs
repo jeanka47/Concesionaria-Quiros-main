@@ -25,9 +25,7 @@ namespace ConcesionariaQuiros.Controllers
         public async Task<IActionResult> Login(LoginRequest request)
         {
             var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u =>
-                    u.Email == request.Email &&
-                    u.Contrasena == request.Contrasena);
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (usuario == null)
             {
@@ -37,13 +35,25 @@ namespace ConcesionariaQuiros.Controllers
                 });
             }
 
-            // Generar el JWT
+            var contrasenaCorrecta = BCrypt.Net.BCrypt.Verify(
+                request.Contrasena,
+                usuario.Contrasena
+            );
+
+            if (!contrasenaCorrecta)
+            {
+                return Unauthorized(new
+                {
+                    mensaje = "Correo o contraseña incorrectos."
+                });
+            }
+
             var token = _jwtService.GenerarToken(usuario);
 
             return Ok(new
             {
                 mensaje = "Inicio de sesión correcto.",
-                token = token,
+                token,
                 usuario = new
                 {
                     usuario.UsuarioId,

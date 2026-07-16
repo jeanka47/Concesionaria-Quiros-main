@@ -11,7 +11,6 @@ namespace ConcesionariaQuiros.Controllers
     {
         private readonly ConcesionariaContext _context;
 
-        // Inyección del DbContext
         public UsuariosController(ConcesionariaContext context)
         {
             _context = context;
@@ -19,34 +18,69 @@ namespace ConcesionariaQuiros.Controllers
 
         // GET: api/Usuarios
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
+        public async Task<ActionResult<IEnumerable<UsuarioResponse>>> GetUsuarios()
         {
-            return await _context.Usuarios.ToListAsync();
+            var usuarios = await _context.Usuarios
+                .Select(usuario => new UsuarioResponse
+                {
+                    UsuarioId = usuario.UsuarioId,
+                    NombreUsuario = usuario.NombreUsuario,
+                    Email = usuario.Email,
+                    Rol = usuario.rol
+                })
+                .ToListAsync();
+
+            return Ok(usuarios);
         }
 
         // GET: api/Usuarios/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Usuario>> GetUsuario(int id)
+        public async Task<ActionResult<UsuarioResponse>> GetUsuario(int id)
         {
-            var usuario = await _context.Usuarios.FindAsync(id);
+            var usuario = await _context.Usuarios
+                .Where(usuario => usuario.UsuarioId == id)
+                .Select(usuario => new UsuarioResponse
+                {
+                    UsuarioId = usuario.UsuarioId,
+                    NombreUsuario = usuario.NombreUsuario,
+                    Email = usuario.Email,
+                    Rol = usuario.rol
+                })
+                .FirstOrDefaultAsync();
 
             if (usuario == null)
-                return NotFound();
+            {
+                return NotFound(new
+                {
+                    mensaje = "Usuario no encontrado."
+                });
+            }
 
-            return usuario;
+            return Ok(usuario);
         }
 
         // POST: api/Usuarios
         [HttpPost]
-        public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
+        public async Task<ActionResult<UsuarioResponse>> PostUsuario(Usuario usuario)
         {
+            usuario.Contrasena =
+                BCrypt.Net.BCrypt.HashPassword(usuario.Contrasena);
+
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
+
+            var respuesta = new UsuarioResponse
+            {
+                UsuarioId = usuario.UsuarioId,
+                NombreUsuario = usuario.NombreUsuario,
+                Email = usuario.Email,
+                Rol = usuario.rol
+            };
 
             return CreatedAtAction(
                 nameof(GetUsuario),
                 new { id = usuario.UsuarioId },
-                usuario
+                respuesta
             );
         }
 
@@ -55,21 +89,35 @@ namespace ConcesionariaQuiros.Controllers
         public async Task<IActionResult> PutUsuario(int id, Usuario usuario)
         {
             if (id != usuario.UsuarioId)
-                return BadRequest();
-
-            _context.Entry(usuario).State = EntityState.Modified;
-
-            try
             {
-                await _context.SaveChangesAsync();
+                return BadRequest(new
+                {
+                    mensaje = "El identificador del usuario no coincide."
+                });
             }
-            catch (DbUpdateConcurrencyException)
+
+            var usuarioExistente = await _context.Usuarios.FindAsync(id);
+
+            if (usuarioExistente == null)
             {
-                if (!_context.Usuarios.Any(e => e.UsuarioId == id))
-                    return NotFound();
-                else
-                    throw;
+                return NotFound(new
+                {
+                    mensaje = "Usuario no encontrado."
+                });
             }
+
+            usuarioExistente.NombreUsuario = usuario.NombreUsuario;
+            usuarioExistente.Email = usuario.Email;
+            usuarioExistente.rol = usuario.rol;
+
+            // Solo cambia y protege la contraseña si se envía una nueva.
+            if (!string.IsNullOrWhiteSpace(usuario.Contrasena))
+            {
+                usuarioExistente.Contrasena =
+                    BCrypt.Net.BCrypt.HashPassword(usuario.Contrasena);
+            }
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -81,7 +129,12 @@ namespace ConcesionariaQuiros.Controllers
             var usuario = await _context.Usuarios.FindAsync(id);
 
             if (usuario == null)
-                return NotFound();
+            {
+                return NotFound(new
+                {
+                    mensaje = "Usuario no encontrado."
+                });
+            }
 
             _context.Usuarios.Remove(usuario);
             await _context.SaveChangesAsync();
