@@ -14,7 +14,7 @@ namespace ConcesionariaQuiros.Data
 
         public DbSet<Vehiculo> Vehiculos { get; set; }
         public DbSet<Persona> Personas { get; set; }
-        public DbSet<Concesionario> Concesionario { get; set; }
+        public DbSet<Concesionario> Concesionarios { get; set; }
         public DbSet<Diagnostico> Diagnosticos { get; set; }
         public DbSet<Mecanico> Mecanicos { get; set; }
         public DbSet<Refaccion> Refacciones { get; set; }

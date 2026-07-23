@@ -21,14 +21,14 @@ namespace ConcesionariaQuiros.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Concesionario>>> GetConcesionarios()
         {
-            return await _context.Concesionario.ToListAsync();
+            return await _context.Concesionarios.ToListAsync();
         }
 
         // GET
         [HttpGet("{id}")]
         public async Task<ActionResult<Concesionario>> GetConcesionario(int id)
         {
-            var concesionario = await _context.Concesionario.FindAsync(id);
+            var concesionario = await _context.Concesionarios.FindAsync(id);
 
             if (concesionario == null)
                 return NotFound();
@@ -40,7 +40,7 @@ namespace ConcesionariaQuiros.Controllers
         [HttpPost]
         public async Task<ActionResult<Concesionario>> PostConcesionario(Concesionario concesionario)
         {
-            _context.Concesionario.Add(concesionario);
+            _context.Concesionarios.Add(concesionario);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
@@ -65,7 +65,7 @@ namespace ConcesionariaQuiros.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Concesionario.Any(e => e.ConcesionarioId == id))
+                if (!_context.Concesionarios.Any(e => e.ConcesionarioId == id))
                     return NotFound();
                 else
                     throw;
@@ -78,12 +78,12 @@ namespace ConcesionariaQuiros.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteConcesionario(int id)
         {
-            var concesionario = await _context.Concesionario.FindAsync(id);
+            var concesionario = await _context.Concesionarios.FindAsync(id);
 
             if (concesionario == null)
                 return NotFound();
 
-            _context.Concesionario.Remove(concesionario);
+            _context.Concesionarios.Remove(concesionario);
             await _context.SaveChangesAsync();
 
             return NoContent();
